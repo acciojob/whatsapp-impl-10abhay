@@ -19,11 +19,10 @@ public class WhatsappRepository {
     private HashSet<String> userMobile;
     private int customGroupCount;
     private int messageId;
-    private HashMap<Integer,String> messages;
-    HashSet<User> userDb;
 
 
-    public WhatsappRepository(){
+
+    public WhatsappRepository() {
         this.groupMessageMap = new HashMap<Group, List<Message>>();
 
         this.groupUserMap = new HashMap<Group, List<User>>();
@@ -32,25 +31,16 @@ public class WhatsappRepository {
         this.userMobile = new HashSet<>();
         this.customGroupCount = 0;
         this.messageId = 0;
-        this.messages = new HashMap<Integer, String>();
-        this.userDb = new HashSet<>();
-
     }
-    public String createUser(String name,String mobile) {
 
-        try {
-            if (userMobile.contains(mobile)) {
-                throw new RuntimeException("User already exists");
-            }
-            userMobile.add(mobile);
-        }
-        catch (RuntimeException e) {
-            return e.getMessage();
-        }
+
+
+    public String createUser(String name,String mobile) throws Exception{
         User user = new User(name,mobile);
+        if(userMobile.contains(mobile)){
+            throw new Exception("User already exists");
+        }
         userMobile.add(mobile);
-        userDb.add(user);
-
         return "SUCCESS";
     }
 
@@ -58,7 +48,7 @@ public class WhatsappRepository {
         int n= users.size();
         if(n<2){return null;}
         if(n==2){
-            Group group=new Group(users.get(1).getName(),2);
+            Group group=new Group(users.get(1).getName(),n);
             groupUserMap.put(group,users);
             adminMap.put(group,users.get(1));
             return group;
@@ -74,34 +64,36 @@ public class WhatsappRepository {
 
     public int createMessage(String content){
         messageId++;
-        messages.put(messageId,content);
+        Message message=new Message(messageId,content,new Date());
         return messageId;
     }
 
-    public int sendMessage(Message message, User sender, Group group) {
-        if(!groupUserMap.containsKey(group)){return -1;}
-        List<User> user=groupUserMap.get(group);
-        for(User users:user){
-            if(!sender.equals(user)){return -2;}
-        }
-        List<Message> messag=groupMessageMap.get(message);
-        messag.add(message);
-        groupMessageMap.put(group,messag);
+    public int sendMessage(Message message, User sender, Group group) throws Exception{
+        if(!groupUserMap.containsKey(group)){throw new Exception("Group does not exist");}
+        if(!groupUserMap.get(group).contains(sender)){throw new Exception("You are not allowed to send message");}
 
-        messageId++;
-        messages.put(messageId,message.getContent());
-        return messageId;
+        senderMap.put(message,sender);
+        if(!groupMessageMap.containsKey(group)){
+            List<Message> list=new ArrayList<>();
+            list.add(message);
+            groupMessageMap.put(group,list);
+        }
+        else {
+            List<Message> list=groupMessageMap.get(group);
+            list.add(message);
+            groupMessageMap.put(group,list);
+        }
+        return groupMessageMap.get(group).size();
     }
 
-    public String changeAdmin(User approver, User user, Group group) {
-        if(!groupUserMap.containsKey(group)){return "Group does not exist";}
-        if(!adminMap.get(group).equals(approver)){return "Approver does not have rights";}
-        List<User> users=groupUserMap.get(group);
-        for(User use:users){
-            if(use.equals(user)){adminMap.put(group,use);}
-            return "SUCCESS";
+    public String changeAdmin(User approver, User user, Group group) throws Exception{
+        if(!groupUserMap.containsKey(group)){throw new Exception("Group does not exist");}
+        if(!adminMap.get(group).equals(approver)){throw new Exception("Approver does not have rights");}
+        if(!groupUserMap.get(group).contains(user)){
+            throw new Exception("User is not a participant");
         }
-        return "User is not a participant";
+        adminMap.put(group,user);
+        return"SUCCESS";
     }
 
 
