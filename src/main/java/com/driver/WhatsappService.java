@@ -23,10 +23,6 @@ public class WhatsappService {
     public String changeAdmin(User approver, User user, Group group){
         return whatsappRepository.changeAdmin(approver,user,group);
     }
-    public int removeUser(User user){
-        return whatsappRepository.removeUser(user);
-    }
-    public String findMessage(Date start, Date end, int K){return whatsappRepository.findMessage(start,end,K);}
 
 
     }
